@@ -30,9 +30,9 @@ public class songAnalyzer {
 //Constructor
 	Map<String, Map<String, Integer>>tf;
 	private Map<String, String> titleLyricsMap;
-	public SingerAnalyzer(String directorypath)
+	public songAnalyzer(String directorypath)
 	{
-		this.titleLyricsMap = SingerAnalyzer.songLyricsmap(directorypath);
+		this.titleLyricsMap = songAnalyzer.songLyricsmap(directorypath);
 		this.tf=getTF();
 	}
 	
