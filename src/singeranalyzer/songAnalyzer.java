@@ -83,7 +83,7 @@ public class songAnalyzer {
 			/**
 			 *Built in for hashMap that prevents your code from crashign when it sees a word for first time (getorDefault)
 			 */
-			frequencyMap.put(word, frequencyMap.getOrDefault(words, 0)+1);
+			frequencyMap.put(word, frequencyMap.getOrDefault(word, 0)+1);
 		}
 		return frequencyMap;
 	}
