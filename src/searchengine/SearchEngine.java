@@ -31,7 +31,7 @@ public class SearchEngine {
 		Path path = Paths.get(filePath);
 		
 	
-			try (Scanner scn = new Scanner (filePath)){
+			try (Scanner scn = new Scanner (path)){
 				
 				if (scn.hasNextLine()) {
 				scn.nextLine();
@@ -48,39 +48,28 @@ public class SearchEngine {
 				}
 				
 			} 
+		} catch(IOException e) {
+			e.printStackTrace();
 		}
 		
 		return songLyricsMap;
 	}
-	
-	// Class activity code
-	public static String readFile(String filePath) {
 		
-		Path path = Paths.get(filePath);
-		
-		try {
-			return Files.readString(path).strip();
-			
-		}catch (IOException e) {
-			e.printStackTrace();
-		}
-		return"";
-	}
-	
 	
 	public Set<String> getSongsOrdered() {
 		
-		return new TreeSet<String>(this.titleLyricsMap.keySet());
+		return new TreeSet<>(this.titleLyricsMap.keySet());
 		
 	}
 	
 	// Search engine
 	private Map<String, Integer> getTermFrequency(String input) {
 		
-		String cleanStr = input.toLowerCase().replaceAll("[^a-z0-9]","");
+		String cleanStr = input.toLowerCase().replaceAll("[^a-z0-9 ]", "");
 		String[] words = cleanStr.split("\\s+");
 		
 		Map<String, Integer> frequencyMap = new HashMap<>();
+		
 		for(String word : words) {
 			frequencyMap.put(word,frequencyMap.getOrDefault(word,0)+ 1);  //getOrDefault built-in method for a HashMap prevents the code form crashing when see it for the first time
 		}
@@ -104,6 +93,7 @@ public class SearchEngine {
 		public SearchEngine(String directoryPath) {
 			this.titleLyricsMap = SearchEngine.readFiles(directoryPath); 		//Constructor
 			this.tf = calculateTF();
+			
 		}
 		
 		
