@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.TreeSet;
 public class SearchEngine {
 	
 	private Map<String, String>titleLyricsMap;
+	private Map<String, Double> idf; 
 	/**
 	 * By - Aamna D.
 	 */
@@ -26,214 +28,223 @@ public class SearchEngine {
 		 * Reads the songg_lyrics tsv file 
 		 */
 		
-		HashMap<String, String> songLyricsMap = new HashMap <String, String>();
-		
+		HashMap<String, String> songLyricsMap = new HashMap<String, String>();
 		Path path = Paths.get(filePath);
+
 		
-	
-			try (Scanner scn = new Scanner (path)){
-				
-				if (scn.hasNextLine()) {
+		try (Scanner scn = new Scanner(path)) {
+
+			if (scn.hasNextLine()) {
 				scn.nextLine();
+			}
+
+			while (scn.hasNextLine()) {
+				String line = scn.nextLine();
+				String[] columns = line.split("\t");
+
+				if (columns.length >= 6) {
+					String title = columns[0];
+					String lyrics = columns[5];
+					songLyricsMap.put(title, lyrics);
 				}
-				while(scn.hasNextLine()) {
-					String line = scn.nextLine();
-					String[] columns = line.split("\t");
-				
-					if (columns.length >= 6) {
-						String title = columns[0];
-						String lyrics = columns[5];
-					
-						songLyricsMap.put(title,lyrics);
-				}
-				
-			} 
-		} catch(IOException e) {
+			}
+			
+		}catch(IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		return songLyricsMap;
 	}
-		
-	
-	public Set<String> getSongsOrdered() {
-		
-		return new TreeSet<>(this.titleLyricsMap.keySet());
-		
+
+	// Class activity code
+	public static String readFile(String filePath) {
+		Path path = Paths.get(filePath);
+
+		try {
+			return Files.readString(path).strip();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return "";
 	}
-	
+
+	public Set<String> getSongsOrdered() {
+		return new TreeSet<String>(this.titleLyricsMap.keySet());
+	}
+
 	// Search engine
 	private Map<String, Integer> getTermFrequency(String input) {
+
 		
 		String cleanStr = input.toLowerCase().replaceAll("[^a-z0-9 ]", "");
 		String[] words = cleanStr.split("\\s+");
-		
+
 		Map<String, Integer> frequencyMap = new HashMap<>();
-		
-		for(String word : words) {
-			frequencyMap.put(word,frequencyMap.getOrDefault(word,0)+ 1);  //getOrDefault built-in method for a HashMap prevents the code form crashing when see it for the first time
+		for (String word : words) {
+			frequencyMap.put(word, frequencyMap.getOrDefault(word, 0) + 1);
+			//getOrDefault built-in method for a HashMap prevents the code form crashing when see it for the first time
 		}
 		return frequencyMap;
-		
-		}
-	
-		private Map<String,Map<String,Integer>>calculateTF(){
-			Map<String,Map<String,Integer>>tf = new HashMap<String,Map<String,Integer>>();
-			
-			for(String songTitle:titleLyricsMap.keySet()) {
-				String lyrics = titleLyricsMap.get(songTitle);
-				Map<String,Integer>currentTF = getTermFrequency(lyrics);
-				tf.put(songTitle,currentTF);
-			}
-			
-			return tf;
-		}
-		
-		Map<String,Map<String,Integer>>tf;
-		public SearchEngine(String directoryPath) {
-			this.titleLyricsMap = SearchEngine.readFiles(directoryPath); 		//Constructor
-			this.tf = calculateTF();
-			
-		}
-		
-		
-		
-		//Search Method
-		public List<String> search(String query) {
-			String cleanStr = query.toLowerCase().replaceAll("[^a-z0-9]","");
-			String[] queryTerms = cleanStr.split("\\s+");
-			//String[]queryTerms=query.split(" ");
-		
-			Map <String,Integer>songScore = new HashMap <String,Integer>();
-			
-			for(String song : tf.keySet()) {
-				int score = 0;
-				Map<String,Integer>currentTF = tf.get(song);
-				for(String queryTerm: queryTerms) {
-					
-					if(currentTF.containsKey(queryTerm))
-						score+=currentTF.get(queryTerm);
-						songScore.put(song,score); 
-				}
-				
-			  }
-			return topK(songScore,3);
-			}	
-			
+	}
 
-		
-		//Top 3
-				
-				private List<String>topK(Map<String,Integer>songScores,int k) {
-					
-					List<String>top = new ArrayList<String>();
-					while(k>0) {
-						int maxScore =-1; // max revelce score
-						String maxSong = ""; // Keep maxsong title
-						for(String Song: songScores.keySet()) {
-							int currentScore = songScores.get(Song);
-							if (currentScore > songScores.get(Song));
-							if (currentScore > maxScore) {
-								maxSong = Song;
-								maxScore = currentScore;
-							
-							}
-							
-						}
-						top.add(maxSong);
-						songScores.remove(maxSong);
-						k --;
-					}
-					return top;
-				}		// end of class activity code
-				
-	/**
-	 * IDF for project
-	 */
-	private Map<String, Double>idf;
-	public Map<String,Double>getTopResults(String query, int frequncy){
-		//Sets up the maps and variable N as the counter for total number of songs
-		
-		Map<String,Double>idf = new HashMap<String,Double>();
-		Map<String,Integer>DocFrequency = new HashMap<String,Integer>();
-		
-		int N = titleLyricsMap.size(); // number of songs
-		
-		
-		for(String lyricsIDF : titleLyricsMap.values()) {
-			
-			Set<String>WordCount = new HashSet<String>();
-			
-			for(String word : WordCount) {
-				DocFrequency.put(word,DocFrequency.getOrDefault(word,0) + 1);
-			}
-			
-		// Calculates the score for idf
-			
-			for(String word : DocFrequency.keySet()) {
-				double df = DocFrequency.get(word);
-				idf.put(word, N/df); // N/Number of document having that term
+	private Map<String, Map<String, Integer>> calculateTF() {
+		Map<String, Map<String, Integer>> tf = new HashMap<>();
+
+		for (String songTitle : titleLyricsMap.keySet()) {
+			String lyrics = titleLyricsMap.get(songTitle);
+			Map<String, Integer> currentTF = getTermFrequency(lyrics);
+			tf.put(songTitle, currentTF);
+		}
+		return tf;
+	}
+
+	Map<String, Map<String, Integer>> tf;
+
+	//Constructor
+	public SearchEngine(String directoryPath) {
+		this.titleLyricsMap = SearchEngine.readFiles(directoryPath);
+		this.tf = calculateTF();
+		this.idf = computeIDF(); 
+	}
+
+	
+	private Map<String, Double> computeIDF() {
+
+		Map<String, Double> idf = new HashMap<>();
+		Map<String, Integer> docFrequency = new HashMap<>();
+
+		int N = titleLyricsMap.size();
+
+		for (String lyrics : titleLyricsMap.values()) {
+
+			String clean = lyrics.toLowerCase().replaceAll("[^a-z0-9 ]", "");
+			String[] words = clean.split("\\s+");
+
+			Set<String> uniqueWords = new HashSet<>(Arrays.asList(words));
+
+			for (String word : uniqueWords) {
+				docFrequency.put(word, docFrequency.getOrDefault(word, 0) + 1);
 			}
 		}
+
+		for (String word : docFrequency.keySet()) {
+			double df = docFrequency.get(word);
+			idf.put(word, (double) N / df);
+		}
+
 		return idf;
 	}
-	
+
+	// Search Method
+	public List<String> search(String query) {
+
+		
+		String cleanStr = query.toLowerCase().replaceAll("[^a-z0-9 ]", "");
+		String[] queryTerms = cleanStr.split("\\s+");
+		//String[]queryTerms=query.split(" ");
+		
+		Map<String, Integer> songScore = new HashMap<>();
+
+		for (String song : tf.keySet()) {
+			int score = 0;
+			Map<String, Integer> currentTF = tf.get(song);
+
+			for (String queryTerm : queryTerms) {
+				if (currentTF.containsKey(queryTerm)) {
+					score += currentTF.get(queryTerm); 
+				}
+			}
+			songScore.put(song, score);
+		}
+
+		return topK(songScore, 3);
+	}
+
+	// Top 3
+	private List<String> topK(Map<String, Integer> songScores, int k) {
+
+		List<String> top = new ArrayList<>();
+
+		while (k > 0 && !songScores.isEmpty()) {
+
+			int maxScore = -1; //max revelce score
+			String maxSong = ""; //Keep maxsong title
+
+			for (String song : songScores.keySet()) {
+				int currentScore = songScores.get(song);
+
+				// FIXED: removed bad condition
+				if (currentScore > maxScore) {
+					maxSong = song;
+					maxScore = currentScore;
+				}
+			}
+
+			top.add(maxSong);
+			songScores.remove(maxSong);
+			k--;
+		}
+
+		return top;
+		//end of class activity code
+	}
+
 	/**
-	 * Search Method for IDF 
+	 * 
+	 * IDF for project
 	 */
 	public Map<String, Double> searchIDF(String query) {
-		String cleanStr = query.toLowerCase().replaceAll("[^a-z0-9]",""); //Regex to clean the query
+
+		String cleanStr = query.toLowerCase().replaceAll("[^a-z0-9 ]", "");
 		String[] queryTerms = cleanStr.split("\\s+");
-		
-		
-		Map <String,Double>SongScoreIDF = new HashMap <String,Double>();
-		
-		for(String SongDoc : tf.keySet()) {
-		
+
+		Map<String, Double> songScoreIDF = new HashMap<>();
+
+		for (String song : tf.keySet()) {
+
 			double currentSongScore = 0.0;
-			int terms = 0;
-			
-			Map<String,Integer>getTopResults = tf.get(SongDoc);
-			
-			for(String queryTerm: queryTerms) {
-				
-				if(getTopResults.containsKey(queryTerm))
+			Map<String, Integer> currentTF = tf.get(song);
+
+			for (String queryTerm : queryTerms) {
+
+				if (currentTF.containsKey(queryTerm)) { 
+
+					int terms = currentTF.get(queryTerm);
+					double idfScore = idf.getOrDefault(queryTerm, 0.0);
+
+					double score = terms * idfScore;
+					//Relevance score based on tf and idf
+
+
 					
-					terms = getTopResults.get(queryTerm);
-					double idfScore = idf.getOrDefault(queryTerm,0.0);
-					
-					double ScoreEnchancementByWeight = terms * idfScore;
-					if(SongDoc.contains(queryTerm)) {		// Score Enhancement if term is in title by 5 importance
-						ScoreEnchancementByWeight = ScoreEnchancementByWeight* 5.0;
+					if (song.toLowerCase().contains(queryTerm)) {
+						score *= 5.0;
+						// Score Enhancement if term is in title by 5 importance
+
 					}
-				
-					currentSongScore += (terms * idfScore);  //Relevance score based on tf and idf
-					SongScoreIDF.put(SongDoc,currentSongScore); 
+
+					currentSongScore += score; 
+				}
 			}
-			
-		}
-		return SongScoreIDF;
-	}	
 
-
-		public static void main(String[] args) {
-			/**
-			 * Testing File Reader 
-			 */
-
-			String filePath ="/Users/aamnadhamdachhawala/Downloads/song_lyrics.tsv";
-			
-			Map<String,String> songlyricMap = SearchEngine.readFiles(filePath); 		
-			System.out.println(songlyricMap.keySet());
-			
-			SearchEngine FileSongs = new SearchEngine(filePath);
-			System.out.println(FileSongs.searchIDF("happy").toString());
-			
-
-			
+			songScoreIDF.put(song, currentSongScore);
 		}
 
+		return songScoreIDF;
 	}
-	
+
+	public static void main(String[] args) {
+		/**
+		 * Testing File Reader
+		 */
 
 
+		String filePath = "/Users/aamnadhamdachhawala/Downloads/song_lyrics.tsv"; 
+
+		Map<String, String> songlyricMap = SearchEngine.readFiles(filePath);
+		System.out.println(songlyricMap.keySet());
+
+		SearchEngine fileSongs = new SearchEngine(filePath);
+		System.out.println(fileSongs.searchIDF("happy"));
+	}
+}

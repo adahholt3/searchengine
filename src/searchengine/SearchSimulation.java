@@ -34,8 +34,9 @@ public class SearchSimulation {
         String[] terms = query.toLowerCase().split(" ");
 
         for (String song : results) {
+        	String lowerSong = song.toLowerCase();
             for (String term : terms) {
-                if (song.toLowerCase().contains(term)) {
+                if (lowerSong.contains(term)) {
                     count++;
                     break;
                 }
